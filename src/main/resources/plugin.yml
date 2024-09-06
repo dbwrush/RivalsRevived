@@ -1,0 +1,38 @@
+name: Rivals
+version: '${project.version}'
+main: net.sudologic.rivals.Rivals
+api-version: '1.20'
+author: sudologic
+depend:
+  - WorldGuard
+  - Shopkeepers
+commands:
+  rivals:
+    description: Main rivals command
+    usage: /rivals
+  rivalsadmin:
+    description: Rivals command for admins
+    usage: /rivalsadmin
+  home:
+    description: Teleport to a home
+    usage: /home
+  sethome:
+    description: Sets a home
+    usage: /sethome
+  delhome:
+    description: Deletes a home
+    usage: /delhome
+  homes:
+    description: Lists your homes
+    usage: /homes
+  policy:
+    description: Propose policy changes
+    usage: /policy
+  rsb:
+    description: Toggle the Rivals scoreboard
+    usage: /rsb
+
+permissions:
+  rivals.admin:
+    description: Access to /rivalsadmin command, and editing all shopkeepers.
+    default: op
