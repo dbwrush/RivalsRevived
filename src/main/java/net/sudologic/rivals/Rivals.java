@@ -22,6 +22,25 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 
+/*
+TODO: Add control points
+ - Detect placement or removal of faction banner on a control point
+ - Display progress towards capturing a control point
+ - Display which faction owns a control point
+ - Reward owning facton with Eye of Ender at 1 per week
+TODO: Add Crisis Faction
+ - When Dragon is killed, Crisis mode activates
+ - Dragon killing faction becomes Crisis faction
+ - All other factions cannot PvP each other, only against the Crisis faction
+ - All other factions teleported out of End
+ - End portals disabled
+ - Crisis faction cannot exit End for 2 days
+ - At end of 2 days, Crisis faction teleported to one of the Control Points
+TODO: Add a custom command to give admins an Eye of Ender with custom NBT data
+TODO: Add permanent potion effects to factions that place an Eye of Ender into the portal
+ - Effect is based on NBT data on the Eye they used.
+ */
+
 public final class Rivals extends JavaPlugin {
     private static FileConfiguration customConfig;
     private static FactionManager factionManager;
