@@ -49,11 +49,8 @@ public class ScoreboardManager implements CommandExecutor {
         if(f != null) {
             b.updateLines("Faction: " + f.getColor() + f.getName(),
                     "Members: " + ChatColor.WHITE + f.countOnlineMembers() + "/" + f.getMembers().size(),
-                    "Power: " + ChatColor.WHITE + Rivals.getRoundedDecimal(f.getPower()),
-                    "Influence: " + ChatColor.WHITE + Rivals.getRoundedDecimal(f.getInfluence()),
-                    "Warmongering: " + ChatColor.WHITE + Rivals.getRoundedDecimal(f.getWarmongering()) + " + " + Rivals.getRoundedDecimal(Rivals.getEffectManager().getPlayerWarMongering(id)),
+                    "WarMongering: " + ChatColor.WHITE + Rivals.getRoundedDecimal(Rivals.getEffectManager().getPlayerWarMongering(id)),
                     "In Combat: " + ChatColor.WHITE + combatString(Rivals.getEventManager().combatTimeLeft(id)),
-                    "Status: " + ChatColor.WHITE + f.getStatus(),
                     loc);
         } else {
             b.updateLines("Faction: " + ChatColor.WHITE + "None",

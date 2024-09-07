@@ -8,7 +8,6 @@ import net.sudologic.rivals.*;
 import net.sudologic.rivals.managers.ClaimManager;
 import net.sudologic.rivals.managers.FactionManager;
 import net.sudologic.rivals.managers.ShopManager;
-import net.sudologic.rivals.resources.ResourceSpawner;
 import net.sudologic.rivals.util.NameFetcher;
 import net.sudologic.rivals.util.UUIDFetcher;
 import org.bukkit.Bukkit;
@@ -189,360 +188,6 @@ public class RivalsCommand implements CommandExecutor {
                 p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You are no longer a member of " + ChatColor.RESET + faction.getName());
                 return true;
             }
-            else if("enemy".equals(args[0])) {
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to declare war." + ChatColor.RESET);
-                    return true;
-                }
-                if(args.length < 2) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must specify a faction to declare war on." + ChatColor.RESET);
-                    return true;
-                }
-                String enemyName = args[1];
-                boolean now = false;
-                if(args.length > 2) {
-                    now = args[2].equals("now");
-                }
-                Faction enemy = manager.getFactionByName(enemyName);
-
-                if(now) {
-                    boolean mutual = enemy != null;
-                    for(Integer a : faction.getAllies()) {
-                        if(enemy.getEnemies().contains(a))
-                            mutual = true;
-                    }
-                    if(faction.getPower() > (double)Rivals.getSettings().get("nowWarPower") || mutual) {
-                        if(!mutual)
-                            faction.rawPowerChange((double)Rivals.getSettings().get("nowWarPower") * -1);
-                        if(faction.addEnemy(enemy.getID())) {
-                            p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You are now enemies with " + ChatColor.RESET + enemyName);
-                            faction.changeWarmongering(.5);
-                        } else {
-                            p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Could not declare war on " + ChatColor.RESET + enemyName + ChatColor.LIGHT_PURPLE + ", there might not be a faction by that name." + ChatColor.RESET);
-                            Faction imprecise = manager.getFactionByNameImprecise(enemyName);
-                            if(imprecise != null) {
-                                p.sendMessage(ChatColor.RED + "There is a faction named "  + ChatColor.RESET + imprecise.getName());
-                            }
-                        }
-                    } else {
-                        p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Your faction does not have enough power to declare war immediately." + ChatColor.RESET);
-                    }
-                } else {
-                    if(enemy == null) {
-                        p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Could not declare war on " + ChatColor.RESET + enemyName + ChatColor.LIGHT_PURPLE + ", there might not be a faction by that name." + ChatColor.RESET);
-                        Faction imprecise = manager.getFactionByNameImprecise(enemyName);
-                        if(imprecise != null) {
-                            p.sendMessage("There is a faction named " + imprecise.getName());
-                        }
-                    } else {
-                        int delay = (int) Rivals.getSettings().get("warDelay");
-                        p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Sent war declaration to " + ChatColor.RESET + enemyName + ChatColor.LIGHT_PURPLE + ". They have " + delay + " hours to prepare." + ChatColor.RESET);
-                        manager.createWarDeclaration(faction.getID(), enemy.getID(), System.currentTimeMillis(), delay);
-                        faction.changeWarmongering(.1);
-                    }
-                }
-                return true;
-            }
-            else if("ally".equals(args[0])) {
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to invite another faction to an alliance." + ChatColor.RESET);
-                    return true;
-                }
-                if(args.length < 2) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must specify a faction to invite to an alliance." + ChatColor.RESET);
-                    return true;
-                }
-                String allyName = args[1];
-                Faction ally = manager.getFactionByName(allyName);
-                if(ally == null) {
-                    Faction imprecise = manager.getFactionByNameImprecise(allyName);
-                    if(imprecise != null) {
-                        p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " There is no faction with that name. Maybe you meant " + ChatColor.RESET + imprecise.getName());
-                    } else {
-                        p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " There is no faction with that name." + ChatColor.RESET);
-                    }
-                    return true;
-                }
-                if(manager.getAllyInvitesForFaction(faction.getID()).contains(ally.getID())) {
-                    faction.addAlly(ally.getID());
-                    manager.removeAllyInvite(ally.getID(), faction.getID());
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You are now allies with " + ChatColor.RESET + ally.getName());
-                } else {
-                    manager.addAllyInvite(faction.getID(), ally.getID());
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Sent alliance invite to " + ChatColor.RESET + ally.getName() + ChatColor.LIGHT_PURPLE + ". Ask them to run '/rivals ally " + faction.getName() + "' to accept.");
-                }
-                return true;
-            }
-            else if("peace".equals(args[0])) {
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to send a peace offer." + ChatColor.RESET);
-                    return true;
-                }
-                if(args.length < 2) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must specify a faction to offer peace." + ChatColor.RESET);
-                    return true;
-                }
-                String enemyName = args[1];
-                Faction enemy = manager.getFactionByName(enemyName);
-                if(!faction.getEnemies().contains(enemy.getID())) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You are not at war with "  + ChatColor.RESET + enemy.getName());
-                    Faction imprecise = manager.getFactionByNameImprecise(enemyName);
-                    if(imprecise != null && faction.getEnemies().contains(imprecise.getID())) {
-                        p.sendMessage("You ARE at war with" + ChatColor.RESET + imprecise.getName());
-                    }
-                    return true;
-                }
-                if(manager.getPeaceInvitesForFaction(faction.getID()).contains(enemy.getID())) {
-                    faction.removeEnemy(enemy.getID());
-                    manager.removePeaceInvite(enemy.getID(), faction.getID());
-                } else {
-                    manager.addPeaceInvite(faction.getID(), enemy.getID());
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Sent peace offer to " + ChatColor.RESET + enemy.getName() + ChatColor.LIGHT_PURPLE + ", they can run the same command to accept the offer.");
-                }
-                return true;
-            }
-            else if("unally".equals(args[0])) {
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to end an alliance." + ChatColor.RESET);
-                    return true;
-                }
-                if(args.length < 2) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must specify a faction to end alliance." + ChatColor.RESET);
-                    return true;
-                }
-                String allyName = args[1];
-                Faction ally = manager.getFactionByName(allyName);
-                if(!faction.getAllies().contains(ally.getID())) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You are not allied with " + ChatColor.RESET + ally.getName());
-                    Faction imprecise = manager.getFactionByNameImprecise(allyName);
-                    if(imprecise != null && faction.getAllies().contains(imprecise.getID())) {
-                        p.sendMessage("You ARE allied with" + ChatColor.RESET + imprecise.getName());
-                    }
-                    return true;
-                }
-                faction.removeAlly(ally.getID());
-                return true;
-            }
-            else if("claim".equals(args[0])) {
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to claim land." + ChatColor.RESET);
-                    return true;
-                }
-                ClaimManager claimManager = Rivals.getClaimManager();
-                Chunk c = p.getLocation().getChunk();
-                double myStrength = claimManager.getClaimStrength(faction);
-                if(3 * myStrength < 1) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Your faction is not powerful enough to claim this land." + ChatColor.RESET);
-                    return true;
-                }
-                if(faction.addClaim(c)) {
-                    faction.sendMessageToOnlineMembers("Claimed chunk X: " + c.getX() + " Z: " + c.getZ() + " in " + c.getWorld().getName() + ".");
-                } else {
-                    ProtectedRegion existingClaim = claimManager.getExistingClaim(c);
-                    if(existingClaim != null) {
-                        String id = existingClaim.getId();
-                        Faction f = manager.getFactionByID(Integer.valueOf(id.split("_")[2]));
-                        if(f != null) {
-                            if(faction.getHostileFactions().contains(f.getID())) {
-                                double enemyStrength = claimManager.getClaimStrength(f);
-                                f.rawPowerChange(-2.5);
-                                myStrength = claimManager.getClaimStrength(faction);
-                                if(myStrength > enemyStrength && 3 * myStrength >= 1) {
-                                    claimManager.removeClaim(c, f);
-                                    claimManager.createClaim(c, faction);
-                                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You have taken this chunk from " + ChatColor.RESET + f.getName());
-                                } else {
-                                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Your faction is not powerful enough to take this claim from " + ChatColor.RESET + f.getName());
-                                    f.rawPowerChange(2.5);
-                                }
-                            } else {
-                                if(f.equals(faction)) {
-                                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Your faction already claims this chunk." + ChatColor.RESET);
-                                } else {
-                                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " This chunk is already claimed by " + ChatColor.RESET + f.getName());
-                                }
-                            }
-                            return true;
-                        }
-                    }
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " For unknown reasons, you cannot claim this chunk." + ChatColor.RESET);
-                    return true;
-                }
-            }
-            else if("trust".equals(args[0])) {//share the claim you're standing in with a faction
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to share claims." + ChatColor.RESET);
-                    return true;
-                }
-                if(args.length < 2) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must specify a faction to share the claim with" + ChatColor.RESET);
-                    return true;
-                }
-                String shareName = args[1];
-                Faction share = manager.getFactionByName(shareName);
-                if(share == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " There is no faction by that name." + ChatColor.RESET);
-                    Faction imprecise = manager.getFactionByNameImprecise(shareName);
-                    if(imprecise != null) {
-                        p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Maybe you meant " + ChatColor.RESET + imprecise.getName());
-                    }
-                    return true;
-                }
-                if(!faction.getAllies().contains(share.getID())) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be allied with a faction to share claims." + ChatColor.RESET);
-                    return true;
-                }
-                Chunk c = p.getLocation().getChunk();
-                ProtectedRegion region = Rivals.getClaimManager().getExistingClaim(c);
-                if(region == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be standing in a claimed chunk to share it." + ChatColor.RESET);
-                    return true;
-                }
-                if(region.getId().split("_")[2].equals(String.valueOf(faction.getID()))) {
-                    if(Rivals.getClaimManager().addFactionToRegion(share, c)) {
-                        p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Shared your claim with " + ChatColor.RESET + share.getName());
-                        return true;
-                    }
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Could not share your claim with " + ChatColor.RESET + share.getName());
-                    return true;
-                } else {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be standing in a claim owned by your faction to share it." + ChatColor.RESET);
-                    return true;
-                }
-            }
-            else if("resource".equals(args[0])) {//list all resource chunks with certain parameters
-                //syntax: /resource <type | distance>, returns all chunks with that resource type or within that distance.
-                //user can also supply both a type and a distance to use both filters.
-                //Returned list will also display chunk owning faction if applicable.
-                if(args.length < 1) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must specify a resource type or distance." + ChatColor.RESET);
-                    return true;
-                }
-                Integer distance = Ints.tryParse(args[0]);
-                String typeString = args[0];
-                Material type;
-                if(distance != null) {
-                    if(args.length > 1) {
-                        typeString = args[1];
-                    }
-                }
-                try {
-                    type = Material.valueOf(typeString);
-                } catch (IllegalArgumentException e) {
-                    type = null;
-                }
-                ArrayList<ResourceSpawner> spawners = Rivals.getResourceManager().getSpawners();
-                if(distance != null) {
-                    spawners = Rivals.getResourceManager().filterByDist(p.getLocation(), distance, spawners);
-                }
-                if(type != null) {
-                    spawners = Rivals.getResourceManager().filterByType(type, spawners);
-                }
-                if(spawners.size() == 0) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " No resources found." + ChatColor.RESET);
-                    return true;
-                }
-                //sort by distance to player
-                spawners.sort((ResourceSpawner a, ResourceSpawner b) -> {
-                    return (int)(a.getLocation().distance(p.getLocation()) - b.getLocation().distance(p.getLocation()));
-                });
-                //trim to only the first 10 chunks
-                if(spawners.size() > 10) {
-                    spawners = new ArrayList<>(spawners.subList(0, 10));
-                }
-                p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Resource Chunks:" + ChatColor.RESET);
-                String rep = "";
-                if(spawners.size() > 0) {
-                    for (ResourceSpawner spawner : spawners) {
-                        Chunk c = spawner.getLocation().getChunk();
-                        ProtectedRegion region = Rivals.getClaimManager().getExistingClaim(c);
-                        Faction f = null;
-                        if (region != null) {
-                            String[] parts = region.getId().split("_");
-                            f = manager.getFactionByID(Integer.valueOf(parts[2]));
-                        }
-                        rep += ChatColor.LIGHT_PURPLE + "World: " + spawner.getLocation().getWorld().getName() + " X: " + spawner.getLocation().getBlockX() + " Z: " + spawner.getLocation().getBlockZ() + " Type: " + spawner.getMaterial();
-                        if (f != null) {
-                            rep += " Owner: " + f.getColor() + f.getName() + "\n";
-                        }
-                    }
-                    p.sendMessage(rep);
-                    return true;
-                } else {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " No resources found." + ChatColor.RESET);
-                    //display syntax
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Syntax: /resource <type | distance>, returns all chunks with that resource type or within that distance." + ChatColor.RESET);
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You can also supply both a type and a distance to use both filters." + ChatColor.RESET);
-                    return true;
-                }
-            }
-            else if("untrust".equals(args[0])) {
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to unshare claims." + ChatColor.RESET);
-                    return true;
-                }
-                if(args.length < 2) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must specify a faction to unshare the claim with" + ChatColor.RESET);
-                    return true;
-                }
-                String unshareName = args[1];
-                Faction unshare = manager.getFactionByName(unshareName);
-                if(unshare == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " There is no faction by that name." + ChatColor.RESET);
-                    Faction imprecise = manager.getFactionByNameImprecise(unshareName);
-                    if(imprecise != null) {
-                        p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Maybe you meant " + ChatColor.RESET + imprecise.getName());
-                    }
-                    return true;
-                }
-                Chunk c = p.getLocation().getChunk();
-                ProtectedRegion region = Rivals.getClaimManager().getExistingClaim(c);
-                if(region == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be standing in a claimed chunk to unshare it." + ChatColor.RESET);
-                    return true;
-                }
-                if(region.getId().split("_")[2].equals(String.valueOf(faction.getID()))) {
-                    if(Rivals.getClaimManager().removeFactionFromRegion(unshare, c)) {
-                        p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Unshared your claim with " + ChatColor.RESET + unshare.getName());
-                        return true;
-                    }
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Could not unshare your claim with " + ChatColor.RESET + unshare.getName());
-                    return true;
-                } else {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be standing in a claim owned by your faction to unshare it." + ChatColor.RESET);
-                    return true;
-                }
-            }
-            else if("claims".equals(args[0])) {
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to view your claims." + ChatColor.RESET);
-                    return true;
-                }
-                List<String> claims = faction.getRegions();
-                if(claims.size() == 0) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Your faction has no claims." + ChatColor.RESET);
-                    return true;
-                }
-                p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Your faction's claims:" + ChatColor.RESET);
-                for(String claim : claims) {
-                    String[] parts = claim.split("_");
-                    p.sendMessage(ChatColor.LIGHT_PURPLE + "World: " + parts[1] + " X: " + parts[3] + " Z: " + parts[4]);
-                }
-                return true;
-            }
-            else if("unclaim".equals(args[0])) {
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to unclaim land." + ChatColor.RESET);
-                    return true;
-                }
-                Chunk c = p.getLocation().getChunk();
-                if(faction.removeClaim(c)) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Removed your claim to chunk " + ChatColor.RESET + c.getX() + " " + c.getZ());
-                    return true;
-                } else {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Your faction does not claim chunk " + ChatColor.RESET + c.getX() + " " + c.getZ());
-                }
-            }
             else if("info".equals(args[0])) {
                 if(args.length < 2) {
                     if(faction == null) {
@@ -606,7 +251,7 @@ public class RivalsCommand implements CommandExecutor {
                     // Check if the index is within the bounds of the factions list
                     if (factionIndex < factions.size()) {
                         Faction f = factions.get(factionIndex);
-                        mess += "\n" + ChatColor.YELLOW + (i + 1) + " " + ChatColor.COLOR_CHAR + f.getColor().toString() + f.getName() + " " + ChatColor.RESET + f.getPower();
+                        mess += "\n" + ChatColor.YELLOW + (i + 1) + " " + ChatColor.COLOR_CHAR + f.getColor().toString() + f.getName() + " " + ChatColor.RESET;
                     } else {
                         // Handle the case where the factionIndex is out of bounds
                         mess += "\n" + ChatColor.RED + "Error: " + ChatColor.RESET + "Faction ranking out of bounds.";
@@ -638,39 +283,6 @@ public class RivalsCommand implements CommandExecutor {
                 p.sendMessage(mess);
                 return true;*/
             }
-            else if("map".equals(args[0])) {
-                Chunk c = p.getLocation().getChunk();
-                int CHUNK_Z =c.getZ();
-                int CHUNK_X = c.getX();
-                String mess = ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Map of your surroundings" + ChatColor.RESET;
-                String facts = "\nFactions: ";
-                for(int z = -4; z <= 4; z++) {
-                    String row = "\n| ";
-                    for(int x = -4; x <= 4; x++) {
-                        Chunk loc = c.getWorld().getChunkAt(CHUNK_X + x, CHUNK_Z + z);
-                        ProtectedRegion claim = Rivals.getClaimManager().getExistingClaim(loc);
-                        if(claim != null) {
-                            Faction f = manager.getFactionByID(Integer.parseInt(claim.getId().split("_")[2]));
-                            if(z == 0 && (x == -1 || x == 0)){
-                                row += ChatColor.COLOR_CHAR + f.getColor().toString() + "X " + ChatColor.COLOR_CHAR + ChatColor.GREEN + "| ";
-                            } else{
-                                row += ChatColor.COLOR_CHAR + f.getColor().toString() + "X " + ChatColor.COLOR_CHAR + ChatColor.RESET + "| ";
-                            }
-                            if(!facts.contains(f.getName())) {
-                                facts += ChatColor.COLOR_CHAR + f.getColor().toString() + f.getName() + ChatColor.COLOR_CHAR + ChatColor.RESET + " ";
-                            }
-                        } else {
-                            row += "_ | ";
-                        }
-                    }
-                    mess += row;
-                }
-                if("\nFactions: ".equals(facts)) {
-                    facts = "There are no nearby factions";
-                }
-                mess += facts;
-                p.sendMessage(mess);
-            }
             else if("color".equals(args[0])) {
                 if(faction == null) {
                     p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to set the faction color." + ChatColor.RESET);
@@ -698,19 +310,6 @@ public class RivalsCommand implements CommandExecutor {
                 p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Successfully changed faction color to " + faction.getColor() + faction.getName());
                 return true;
             }
-            else if("cashout".equals(args[0])) {
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to cash out." + ChatColor.RESET);
-                    return true;
-                }
-                int amount;
-                if(args.length < 2) {
-                    amount = (int) faction.remInfluence(Math.floor(faction.getInfluence()));
-                } else {
-                    amount = (int) faction.remInfluence(Integer.parseInt(args[1]));
-                }
-                p.getInventory().addItem(new ItemStack(Material.DIAMOND, amount));
-            }
             else if("help".equals(args[0])) {
                 String[] commands = {
                     "§e/rivals create <factionName> §f- Creates a new Faction.",
@@ -720,18 +319,9 @@ public class RivalsCommand implements CommandExecutor {
                     "§e/rivals invites §f- Lists your current invites.",
                     "§e/rivals join <factionName> §f- Joins a faction that has invited you.",
                     "§e/rivals leave §f- Leaves your current faction.",
-                    "§e/rivals enemy <factionName> §f- Declare another faction to be your enemy.",
-                    "§e/rivals ally <factionName> §f- Propose/Accept faction alliance.",
-                    "§e/rivals peace <factionName> §f- Propose/Accept peace with another faction.",
-                    "§e/rivals unally <factionName> §f- Ends your alliance with another faction.",
-                    "§e/rivals claim §f- Claim the chunk you are standing in for your faction.",
-                    "§e/rivals unclaim §f- Unclaim a chunk your faction owns.",
                     "§e/rivals info <factionName> §f- Display info for a faction.",
                     "§e/rivals list <pageNumber> §f- Display the faction list, you may specify a page number.",
-                    "§e/rivals map §f- Display a map of nearby claims.",
                     "§e/rivals color <colorCode> §f- Sets the color for your faction using Minecraft color codes.",
-                    "§e/rivals cashout [amount] §f- Cash out your faction's influence for diamonds.",
-                    "§e/rivals pay <factionName> <amount> §f- Pay influence to another faction.",
                     "§e/rivals shop [create/close] §f- Manage your faction's shop."
                     // "§e/rivals INSERT NAME HERE §f- INSERT DESCRIPTION HERE."
                 };
@@ -792,31 +382,6 @@ public class RivalsCommand implements CommandExecutor {
 
                     return true;
             }
-            else if("pay".equals(args[0])) {
-                if(faction == null) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to pay them.");
-                    return true;
-                }
-                if(args.length < 2) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Please include the name of the faction you wish to pay");
-                    return true;
-                }
-                if(args.length < 3) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Please include the amount you wish to pay");
-                    return true;
-                }
-                String factionName = args[1];
-                int amount = Integer.parseInt(args[2]);
-                Faction payF = manager.getFactionByNameImprecise(factionName);
-                if(faction.getInfluence() < amount) {
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You can't afford to pay that much influence");
-                } else {
-                    faction.remInfluence(amount);
-                    payF.addInfluence(amount);
-                    p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Paid " + amount + " influence to " + payF.getColor() + payF.getName());
-                }
-                return true;
-            }
             else if("shop".equals(args[0])) {
                 if(faction == null) {
                     p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " You must be in a faction to access your faction's shop");
@@ -830,10 +395,6 @@ public class RivalsCommand implements CommandExecutor {
                             p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Your faction already has a shop!");
                             return true;
                         } else {
-                            if (faction.getPower() < (double) Rivals.getSettings().get("minShopPower")) {
-                                p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Your faction has too little power to open a shop.");
-                                return true;
-                            }
                             if (shopManager.setupShop(faction)) {
                                 p.sendMessage(ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Created a shop for your faction.");
                                 int x = shopManager.getShopkeeperForFaction(faction).getX();
@@ -912,7 +473,7 @@ public class RivalsCommand implements CommandExecutor {
         FactionManager manager = Rivals.getFactionManager();
         String mess = "";
         if("".equals(s)) {
-            mess = f.getName() + "\nPower: " + Rivals.getRoundedDecimal(f.getPower()) + "\nInfluence: " + Rivals.getRoundedDecimal(f.getInfluence()) + "\nWarmongering: " + Rivals.getRoundedDecimal(f.getWarmongering());
+            mess = f.getName();
             String members = ChatColor.COLOR_CHAR + ChatColor.RESET.toString() + "\nMembers: ";
             if(f.getMembers().size() > 3) {
                 for(int i = 0; i < 3; i++) {
@@ -928,77 +489,6 @@ public class RivalsCommand implements CommandExecutor {
                 members += Bukkit.getOfflinePlayer(f.getMembers().get(0)).getName();
             }
             mess += members;
-
-            String allies = "\nAllies: ";
-            if(f.getAllies().size() > 0) {
-                if(f.getAllies().size() > 3) {
-                    for(int i = 0; i < 3; i++) {
-                        allies += manager.getFactionByID(f.getAllies().get(i)) + ", ";
-                    }
-                    allies += "+ " + (f.getAllies().size() - 3);
-                } else if(f.getAllies().size() > 1){
-                    for(int i = 0; i < f.getAllies().size() - 1; i++) {
-                        allies += manager.getFactionByID(f.getAllies().get(i)).getName() + ", ";
-                    }
-                    allies += "and " + manager.getFactionByID(f.getAllies().get(f.getAllies().size() - 1)).getName();
-                } else {
-                    allies += manager.getFactionByID(f.getAllies().get(0)).getName();
-                }
-            } else {
-                allies += "None";
-            }
-            mess += allies;
-
-            String enemies = "\nEnemies: ";
-            if(f.getEnemies().size() > 0) {
-                if(f.getEnemies().size() > 3) {
-                    for(int i = 0; i < 3; i++) {
-                        enemies += manager.getFactionByID(f.getEnemies().get(i)).getName() + ", ";
-                    }
-                    enemies += "+ " + (f.getEnemies().size() - 3);
-                } else if(f.getEnemies().size() > 1){
-                    for(int i = 0; i < f.getEnemies().size() - 1; i++) {
-                        enemies += manager.getFactionByID(f.getEnemies().get(i)).getName() + ", ";
-                    }
-                    enemies += "and " + manager.getFactionByID(f.getEnemies().get(f.getEnemies().size() - 1)).getName();
-                } else {
-                    enemies += manager.getFactionByID(f.getEnemies().get(0)).getName();
-                }
-            } else {
-                enemies += "None";
-            }
-
-            mess += enemies;
-
-            String upcoming = "\nUpcoming Wars: ";
-            List<Integer> u = manager.getUpcoming(f.getID());
-            if(u.size() > 0) {
-                if(u.size() > 3) {
-                    for(int i = 0; i < 3; i++) {
-                        upcoming += manager.getFactionByID(u.get(i)).getName() + ", ";
-                    }
-                    upcoming += "+ " + (u.size() - 3);
-                } else if(u.size() > 1){
-                    for(int i = 0; i < u.size() - 1; i++) {
-                        upcoming += manager.getFactionByID(u.get(i)).getName() + ", ";
-                    }
-                    upcoming += "and " + manager.getFactionByID(u.get(u.size() - 1)).getName();
-                } else {
-                    upcoming += manager.getFactionByID(u.get(0)).getName();
-                }
-            } else {
-                upcoming += "None";
-            }
-
-            mess += upcoming;
-
-            String chunks = "\nChunks: " + f.getRegions().size();
-
-            mess += chunks;
-
-            String hint = "\nFor more info, add 'members', 'allies', 'enemies', or 'upcoming' to the command.";
-
-            mess += hint;
         } else {
             if("members".equals(s)) {
                 mess = ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Members of " + f.getName();
@@ -1013,53 +503,8 @@ public class RivalsCommand implements CommandExecutor {
                 }
                 mess += members;
             }
-            else if("allies".equals(s)) {
-                mess = ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Allies of " + f.getName();
-                String allies = "\n";
-                if(f.getAllies().size() > 1) {
-                    for(int i = 0; i < f.getAllies().size() - 1; i++) {
-                        allies += manager.getFactionByID(f.getAllies().get(i)).getName() + ", ";
-                    }
-                    allies += "and " + manager.getFactionByID(f.getAllies().get(f.getAllies().size() - 1)).getName();
-                } else if(f.getAllies().size() > 0) {
-                    allies += manager.getFactionByID(f.getAllies().get(f.getAllies().size() - 1)).getName();
-                } else {
-                    allies += "None";
-                }
-                mess += allies;
-            }
-            else if("enemies".equals(s)) {
-                mess = ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Enemies of " + f.getName();
-                String enemies = "\n";
-                if(f.getEnemies().size() > 1) {
-                    for (int i = 0; i < f.getEnemies().size() - 1; i++) {
-                        enemies += manager.getFactionByID(f.getEnemies().get(i)).getName() + ", ";
-                    }
-                    enemies += "and " + manager.getFactionByID(f.getEnemies().get(f.getEnemies().size() - 1)).getName();
-                } else if(f.getEnemies().size() > 0) {
-                    enemies += "and " + manager.getFactionByID(f.getEnemies().get(f.getEnemies().size() - 1)).getName();
-                } else {
-                    enemies += "None";
-                }
-                mess += enemies;
-            } else if("upcoming".equals(s)) {
-                mess = ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Upcoming wars for " + f.getName();
-                String str = "\n";
-                List<Integer> upcoming = manager.getUpcoming(f.getID());
-                if(upcoming.size() > 1) {
-                    for (int i = 0; i < upcoming.size() - 1; i++) {
-                        str += manager.getFactionByID(upcoming.get(i)).getName() + ", ";
-                    }
-                    str += "and " + manager.getFactionByID(upcoming.get(upcoming.size() - 1)).getName();
-                } else if(f.getEnemies().size() > 0) {
-                    str += "and " + manager.getFactionByID(upcoming.get(upcoming.size() - 1)).getName();
-                } else {
-                    str += "None";
-                }
-                mess += str;
-            }
             else {
-                mess = ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Choose either 'members', 'allies', 'enemies', 'upcoming' to get details about a faction.";
+                mess = ChatColor.YELLOW + "[Rivals]" + ChatColor.LIGHT_PURPLE + " Add 'members' to get details about a faction.";
             }
         }
         p.sendMessage(mess);

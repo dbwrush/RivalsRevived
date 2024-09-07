@@ -39,44 +39,7 @@ public class EventManager implements Listener {
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent e) {
-        FactionManager manager = Rivals.getFactionManager();
-        if(e.getEntity().getKiller() != null) {
-            Player killer = e.getEntity().getKiller();
-            Faction killerFaction = manager.getFactionByPlayer(killer.getUniqueId());
-            double power = Math.round((double)Rivals.getSettings().get("killEntityPower") * 100.0) / 100.0;
-            if(e.getEntity() instanceof Monster) {
-                power = Math.round((double)Rivals.getSettings().get("killMonsterPower") * 100.0) / 100.0;
-            } else if(e.getEntity() instanceof Player) {
-                //power = Math.round((double)Rivals.getSettings().get("killPlayerPower") * 100.0) / 100.0;
-                Faction victimFaction = manager.getFactionByPlayer(e.getEntity().getUniqueId());
-                if(killerFaction == null) {
-                    effectManager.changePlayerWarMongering(killer.getUniqueId(), .5);
-                } else if(victimFaction == null) {
-                    power = Math.round((double)Rivals.getSettings().get("killNeutralPower") * 100.0) / 100.0;
-                    killerFaction.changeWarmongering(.25);
-                    effectManager.changePlayerWarMongering(killer.getUniqueId(), .25);
-                } else if(killerFaction.getHostileFactions().contains(victimFaction.getID())) {
-                    power = Math.round((double)Rivals.getSettings().get("killEnemyPower") * 100.0) / 100.0;
-                    killerFaction.changeWarmongering(.05);
-                    effectManager.changePlayerWarMongering(killer.getUniqueId(), .5);
-                } else if(killerFaction.getAllies().contains(victimFaction.getID())) {
-                    power = Math.round((double)Rivals.getSettings().get("killAllyPower") * 100.0) / 100.0;
-                    killerFaction.changeWarmongering(.5);
-                    effectManager.changePlayerWarMongering(killer.getUniqueId(), .5);
-                } else {
-                    power = Math.round((double) Rivals.getSettings().get("killNeutralPower") * 100.0) / 100.0;
-                }
-            }
-            if(killerFaction != null) {
-                killerFaction.powerChange(power);
-            }
-        }
-        if(e.getEntity() instanceof Player) {
-            Faction playerFaction = manager.getFactionByPlayer(e.getEntity().getUniqueId());
-            if(playerFaction != null) {
-                playerFaction.powerChange((double)Rivals.getSettings().get("deathPowerLoss") * -1);
-            }
-        }
+        effectManager.changePlayerWarMongering(e.getEntity().getKiller().getUniqueId(), 1);
     }
 
     @EventHandler
@@ -85,7 +48,6 @@ public class EventManager implements Listener {
         List<Integer> invites = manager.getInvitesForPlayer(e.getPlayer().getUniqueId());
         if(!Rivals.getScoreboardManager().getExcluded(e.getPlayer().getUniqueId()))
             Rivals.getScoreboardManager().assignScoreboard(e.getPlayer());
-        Rivals.getEffectManager().updatePlayer(e.getPlayer(), Rivals.getPoliticsManager());
         if(manager.getFactionByPlayer(e.getPlayer().getUniqueId()) == null && invites.size() > 0) {
             String inviteMess = "[Rivals] You're invited to join " + manager.getFactionByID(invites.get(0)).getColor() + manager.getFactionByID(invites.get(0)).getName();
             e.getPlayer().sendMessage(inviteMess);
@@ -97,8 +59,6 @@ public class EventManager implements Listener {
             e.getPlayer().sendMessage("[Rivals] Faction status:");
             Rivals.getCommand().sendFactionInfo(e.getPlayer(), manager.getFactionByPlayer(e.getPlayer().getUniqueId()), "");
             e.getPlayer().sendMessage("[Rivals] Server status:");//display currently interventioned factions & number of policy proposals
-            Rivals.getPoliticsManager().displayPolicy(new String[]{"intervention"}, e.getPlayer());
-            Rivals.getPoliticsManager().displayPolicy(new String[]{"custodian"}, e.getPlayer());
             e.getPlayer().sendMessage("[Rivals] Use /policy for more information on politics");
         }
     }
@@ -113,16 +73,6 @@ public class EventManager implements Listener {
     public void onWorldSave(WorldSaveEvent e) {
         FactionManager manager = Rivals.getFactionManager();
         manager.removeInvitesOver7Days();
-    }
-
-    @EventHandler
-    public void onTrade(ShopkeeperTradeEvent e) {
-        Faction f = Rivals.getShopManager().getFactionForShopLocation(e.getShopkeeper().getLocation());
-        Player p = e.getPlayer();
-        Faction pFaction = Rivals.getFactionManager().getFactionByPlayer(p.getUniqueId());
-        if(f != pFaction) {
-            f.powerChange((double)Rivals.getSettings().get("tradePower"));
-        }
     }
 
     @EventHandler
@@ -153,27 +103,6 @@ public class EventManager implements Listener {
             }
             combatTime.put(victim.getUniqueId(), System.currentTimeMillis() + (double)Rivals.getSettings().get("combatTeleportDelay") * 1000);
         }
-    }
-
-    @EventHandler
-    public void onClearPotions(PlayerItemConsumeEvent e) {
-        if(e.getItem().getType().equals(Material.MILK_BUCKET) || e.getItem().getType().equals(Material.HONEY_BOTTLE)) {
-            Rivals.getEffectManager().updatePlayer(e.getPlayer(), Rivals.getPoliticsManager());
-        }
-    }
-
-    @EventHandler
-    public void onUseTotem(EntityResurrectEvent e) {
-        if(e.getEntity() instanceof Player) {
-            Bukkit.getScheduler().runTaskLater(Rivals.getPlugin(), () -> {
-                Rivals.getEffectManager().updatePlayer((Player) e.getEntity(), Rivals.getPoliticsManager());
-            }, 1L);
-        }
-    }
-
-    @EventHandler
-    public void onRespawn(PlayerRespawnEvent e) {
-        Rivals.getEffectManager().updatePlayer(e.getPlayer(), Rivals.getPoliticsManager());
     }
 
     public boolean getCombat(UUID uuid) {

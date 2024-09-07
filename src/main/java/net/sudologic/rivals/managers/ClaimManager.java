@@ -97,11 +97,6 @@ public class ClaimManager {
 
     public void updateFactionMembers(Faction f) {
         ArrayList<ProtectedRegion> regions = getRegionsForFaction(f);
-        for(int a : f.getAllies()) {
-            for(ProtectedRegion r : getRegionsForFaction(Rivals.getFactionManager().getFactionByID(a))) {
-                regions.add(r);
-            }
-        }
         DefaultDomain domain = new DefaultDomain();
         //Bukkit.getLogger().log(Level.INFO, "Updating faction claim members");
         for(UUID uuid : f.getMembers()) {
@@ -111,7 +106,6 @@ public class ClaimManager {
         for(ProtectedRegion r : regions) {
             setRegionMembers(getChunkForRegion(r));
         }
-
         ShopManager shopManager = Rivals.getShopManager();
         if(shopManager.getRegionIDForFaction(f.getID()) != null) {
             ProtectedRegion shopRegion = shopManager.getRegionForFaction(f);
@@ -186,13 +180,6 @@ public class ClaimManager {
         }
         return null;
     }
-
-    public double getClaimStrength(Faction f) {
-        int claims = f.getRegions().size();
-        double power = f.getPower();
-        return power / claims;
-    }
-
     public List<Integer> getFactionsForClaim(Chunk c) {
         ProtectedRegion r = getExistingClaim(c);
         if(r != null) {

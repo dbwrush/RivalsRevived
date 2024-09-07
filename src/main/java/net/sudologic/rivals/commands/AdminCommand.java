@@ -45,22 +45,6 @@ public class AdminCommand implements CommandExecutor {
                     commandSender.sendMessage("[Rivals] Failed to change setting " + settingName + ".");
                 }
                 return true;
-            case "stopProposal":
-                if (args.length < 2) {
-                    commandSender.sendMessage("[Rivals] This subcommand requires a policy proposal ID.");
-                    return true;
-                }
-                try {
-                    int proposalId = Integer.parseInt(args[1]);
-                    if (Rivals.getPoliticsManager().stopProposal(proposalId)) {
-                        commandSender.sendMessage("[Rivals] Policy proposal " + proposalId + " stopped.");
-                    } else {
-                        commandSender.sendMessage("[Rivals] No such proposal as " + proposalId + ".");
-                    }
-                } catch (NumberFormatException e) {
-                    commandSender.sendMessage("[Rivals] Invalid policy proposal ID.");
-                }
-                return true;
             case "help":
                 commandSender.sendMessage("[Rivals] Admin Command Help:\n" +
                         "- /rivalsadmin setMainShopRegion <id>: Set the main shop region.\n" +
