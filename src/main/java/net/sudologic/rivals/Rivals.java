@@ -7,6 +7,7 @@ import net.sudologic.rivals.commands.home.HomeCommand;
 import net.sudologic.rivals.commands.home.HomesCommand;
 import net.sudologic.rivals.commands.home.SetHomeCommand;
 import net.sudologic.rivals.managers.*;
+import net.sudologic.rivals.util.CustomCrafts;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -119,7 +120,7 @@ public final class Rivals extends JavaPlugin {
         claimManager = new ClaimManager();
         effectManager = new EffectManager();
         scoreboardManager = new ScoreboardManager(Bukkit.getServer());
-
+        CustomCrafts.registerCrafts();
 
         registerClasses();
         createCustomConfig();

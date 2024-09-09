@@ -1,6 +1,7 @@
 package net.sudologic.rivals.commands;
 
 import net.sudologic.rivals.Rivals;
+import net.sudologic.rivals.util.CustomCrafts;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -14,9 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AdminCommand implements CommandExecutor {
-    //data structure to match eye type to NBT data
-    private static final Map<String, ItemMeta> eyeTypes = new HashMap<String, ItemMeta>() {{
-    }};
 
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] args) {
@@ -67,17 +65,15 @@ public class AdminCommand implements CommandExecutor {
                     return true;
                 }
                 if (args[1].equals("help")) {
-                    showEyeTypes((Player) commandSender);
+                    CustomCrafts.showTypes((Player) commandSender);
                     return true;
                 }
                 // Custom NBT data for the Eye of Ender
-                ItemStack eye = new ItemStack(Material.ENDER_EYE);
-                ItemMeta data = eyeTypes.get(args[1]);
-                if (data == null) {
+                ItemStack eye = CustomCrafts.getCustomItem(args[1]);
+                if (eye == null) {
                     commandSender.sendMessage("[Rivals] Unknown eye type. Use /rivalsadmin eye help for a list of eye types.");
                     return true;
                 }
-                eye.setItemMeta(data);
                 player.getInventory().addItem(eye);
             case "help":
                 commandSender.sendMessage("[Rivals] Admin Command Help:\n" +
@@ -85,19 +81,12 @@ public class AdminCommand implements CommandExecutor {
                         "- /rivalsadmin scanForShopRegions: Scan for shop subregions.\n" +
                         "- /rivalsadmin setting <setting> <value>: Forcefully change a setting.\n" +
                         "- /rivalsadmin stopProposal <id>: Stop a policy proposal.\n" +
+                        "- /rivalsadmin eye <type>: Give yourself an Eye of Ender with custom NBT data.\n" +
                         "Use /rivalsadmin help for this message.");
                 return true;
             default:
                 commandSender.sendMessage("[Rivals] Unknown subcommand. Use /rivalsadmin help for a list of commands.");
                 return true;
-        }
-    }
-
-    //show list of eye types to player
-    public void showEyeTypes(Player player) {
-        player.sendMessage("[Rivals] Eye Types:");
-        for (String type : eyeTypes.keySet()) {
-            player.sendMessage(type);
         }
     }
 }

@@ -1,7 +1,7 @@
 name: Rivals
 version: '${project.version}'
 main: net.sudologic.rivals.Rivals
-api-version: '1.20'
+api-version: '1.21'
 author: sudologic
 depend:
   - WorldGuard
