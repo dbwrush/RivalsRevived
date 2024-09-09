@@ -4,7 +4,9 @@ import com.nisovin.shopkeepers.api.events.*;
 import net.sudologic.rivals.Faction;
 import net.sudologic.rivals.Rivals;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Monster;
@@ -29,8 +31,8 @@ import org.bukkit.inventory.Recipe;
 import java.util.*;
 
 public class EventManager implements Listener {
-    private Map<UUID, Double> combatTime;
-    private EffectManager effectManager;
+    private final Map<UUID, Double> combatTime;
+    private final EffectManager effectManager;
 
     public EventManager(EffectManager effectManager) {
         combatTime = new HashMap<>();
@@ -39,7 +41,17 @@ public class EventManager implements Listener {
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent e) {
-        effectManager.changePlayerWarMongering(e.getEntity().getKiller().getUniqueId(), 1);
+        Location spawn = e.getEntity().getWorld().getSpawnLocation();
+        Player p;
+        if (e.getEntity() instanceof Player && e.getEntity().getKiller() != null) {
+            p = e.getEntity().getKiller();
+        }
+        //get player distance from spawn
+        double distance = e.getEntity().getLocation().distance(spawn);
+        distance = Math.max(1, distance * distance);
+
+        //make warmongering decrease with distance from spawn, decrease should be exponential
+        effectManager.changePlayerWarMongering(e.getEntity().getKiller().getUniqueId(), 1 / distance);
     }
 
     @EventHandler

@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class EffectManager {
-    private HashMap<UUID, Double> playerWarMongering = new HashMap<>();
+    private final HashMap<UUID, Double> playerWarMongering = new HashMap<>();
 
     public void setPlayerWarMongering(UUID playerID, double amount) {
         playerWarMongering.put(playerID, amount);
