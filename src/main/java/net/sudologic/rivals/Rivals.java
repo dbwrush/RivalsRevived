@@ -25,10 +25,8 @@ import java.util.logging.Level;
 
 /*
 TODO: Add control points
- - Detect placement or removal of faction banner on a control point
  - Display progress towards capturing a control point
  - Display which faction owns a control point
- - Reward owning facton with Eye of Ender at 1 per week
 TODO: Add Crisis Faction
  - When Dragon is killed, Crisis mode activates
  - Dragon killing faction becomes Crisis faction
@@ -37,9 +35,6 @@ TODO: Add Crisis Faction
  - End portals disabled
  - Crisis faction cannot exit End for 2 days
  - At end of 2 days, Crisis faction teleported to one of the Control Points
-TODO: Add a custom command to give admins an Eye of Ender with custom NBT data
-TODO: Add permanent potion effects to factions that place an Eye of Ender into the portal
- - Effect is based on NBT data on the Eye they used.
  */
 
 public final class Rivals extends JavaPlugin {
@@ -52,6 +47,7 @@ public final class Rivals extends JavaPlugin {
     private static ConfigurationSection settings;
     private static EventManager eventManager;
     private static ScoreboardManager scoreboardManager;
+    private static ControlPointManager controlPointManager;
     private static Rivals plugin;
     private BukkitTask t;
 
@@ -118,7 +114,6 @@ public final class Rivals extends JavaPlugin {
         plugin = this;
 
         claimManager = new ClaimManager();
-        effectManager = new EffectManager();
         scoreboardManager = new ScoreboardManager(Bukkit.getServer());
         CustomCrafts.registerCrafts();
 
@@ -134,6 +129,7 @@ public final class Rivals extends JavaPlugin {
             public void run() {
                 Bukkit.getLogger().log(Level.INFO, "[Rivals] Updating!");
                 effectManager.update();
+                controlPointManager.update();
             }
         }.runTaskTimer(this, 0, 20L * 60L * 60L);//run once per hour
 
@@ -149,12 +145,18 @@ public final class Rivals extends JavaPlugin {
         Bukkit.getLogger().log(Level.INFO, "[Rivals] Closing!");
     }
 
+    public static ControlPointManager getControlPointManager() {
+        return controlPointManager;
+    }
+
     public void saveData() {
         if(getConfig().getConfigurationSection("settings") == null) {
             getConfig().set("settings", settings);
         }
         getConfig().set("factionManager", factionManager);
         getConfig().set("shopManager", shopManager);
+        getConfig().set("effectManager", effectManager);
+        getConfig().set("controlPointManager", controlPointManager);
         //System.out.println(getConfig().get("data"));
         saveConfig();
     }
@@ -181,6 +183,16 @@ public final class Rivals extends JavaPlugin {
             shopManager = new ShopManager();
         }
         factionManager.buildFactionRanks();
+        if(getConfig().get("effectManager") != null) {
+            effectManager = (EffectManager) getConfig().get("effectManager", EffectManager.class);
+        } else {
+            effectManager = new EffectManager();
+        }
+        if (getConfig().get("controlPointManager") != null) {
+            controlPointManager = (ControlPointManager) getConfig().get("controlPointManager", ControlPointManager.class);
+        } else {
+            controlPointManager = new ControlPointManager();
+        }
     }
 
     public static ConfigurationSection getSettings() {
@@ -237,6 +249,8 @@ public final class Rivals extends JavaPlugin {
         ConfigurationSerialization.registerClass(FactionManager.class);
         ConfigurationSerialization.registerClass(FactionManager.MemberInvite.class);
         ConfigurationSerialization.registerClass(ShopManager.class);
+        ConfigurationSerialization.registerClass(EffectManager.class);
+        ConfigurationSerialization.registerClass(ControlPointManager.class);
     }
 
     public static FactionManager getFactionManager() {

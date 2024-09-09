@@ -7,6 +7,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.type.EndPortalFrame;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Monster;
@@ -14,19 +16,20 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityResurrectEvent;
-import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Merchant;
 import org.bukkit.inventory.MerchantRecipe;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
 
@@ -52,6 +55,79 @@ public class EventManager implements Listener {
 
         //make warmongering decrease with distance from spawn, decrease should be exponential
         effectManager.changePlayerWarMongering(e.getEntity().getKiller().getUniqueId(), 1 / distance);
+    }
+
+    @EventHandler
+    public void onBannerPlace(BlockPlaceEvent e) {
+        if(e.getBlock().getType().toString().contains("BANNER")) {
+            if(Rivals.getControlPointManager().isControlPoint(e.getBlock().getLocation())) {
+                //check if player is in a faction
+                Faction f = Rivals.getFactionManager().getFactionByPlayer(e.getPlayer().getUniqueId());
+                if(f == null) {
+                    e.getPlayer().sendMessage("[Rivals] You must be in a faction to place a banner here.");
+                    e.setCancelled(true);
+                    return;
+                }
+                //otherwise give the player's faction control of the control point
+                Rivals.getControlPointManager().setControlPointOwner(e.getBlock().getLocation(), f.getID());
+            }
+        }
+    }
+
+    @EventHandler
+    public void onFrameInteract(PlayerInteractEvent e) {//detect players adding eyes of ender to portal frames
+        if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            Block b = e.getClickedBlock();
+            if (b != null && b.getType() == Material.END_PORTAL_FRAME) {
+                Player p = e.getPlayer();
+                if(e.getItem() != null && e.getItem().getType() == Material.ENDER_EYE && !((EndPortalFrame)b).hasEye()) {
+                    //Player placed an eye of ender in the portal frame
+                    ItemMeta item = e.getItem().getItemMeta();
+                    if(item == null) {
+                        p.sendMessage("[Rivals] This Eye of Ender is not recognized by the portal.");
+                        e.setCancelled(true);
+                        return;
+                    }
+                    Faction f = Rivals.getFactionManager().getFactionByPlayer(p.getUniqueId());
+                    if(f == null) {
+                        p.sendMessage("[Rivals] You must be in a faction to place an Eye of Ender in the portal.");
+                        e.setCancelled(true);
+                        return;
+                    }
+                    int i = 0;
+                    if(item.hasCustomModelData()) {
+                        i = item.getCustomModelData();
+                    }
+                    switch (i) {
+                        case 0:
+                            p.sendMessage("[Rivals] This Eye of Ender is not recognized by the portal.");
+                            e.setCancelled(true);
+                            return;
+                        case 1: //Guardian Eye
+                            effectManager.addFactionEffect(f, PotionEffectType.RESISTANCE);
+                            break;
+                        case 2: //Heavy Core Eye
+                            effectManager.addFactionEffect(f, PotionEffectType.STRENGTH);
+                            break;
+                        case 3: //Totem Eye
+                            effectManager.addFactionEffect(f, PotionEffectType.REGENERATION);
+                            break;
+                        case 4: //Wither Eye
+                            effectManager.addFactionEffect(f, PotionEffectType.RESISTANCE);
+                            break;
+                        case 5: //Warden Eye
+                            effectManager.addFactionEffect(f, PotionEffectType.NIGHT_VISION);
+                            break;
+                        case 6: //Evoker Eye
+                            effectManager.addFactionEffect(f, PotionEffectType.HEALTH_BOOST);
+                            break;
+                        case 7: //Blaze Eye
+                            effectManager.addFactionEffect(f, PotionEffectType.FIRE_RESISTANCE);
+                            break;
+                    }
+                }
+            }
+        }
     }
 
     @EventHandler
