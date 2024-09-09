@@ -1,5 +1,7 @@
 package net.sudologic.rivals.managers;
 
+import eu.decentsoftware.holograms.api.DHAPI;
+import eu.decentsoftware.holograms.api.holograms.Hologram;
 import net.sudologic.rivals.Faction;
 import net.sudologic.rivals.Rivals;
 import net.sudologic.rivals.util.CustomCrafts;
@@ -9,10 +11,7 @@ import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.PlayerInventory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class ControlPointManager implements ConfigurationSerializable {
     private static final int CONTROL_POINT_CAPTURE_TIME = 10;//time in hours to capture a control point
@@ -22,7 +21,6 @@ public class ControlPointManager implements ConfigurationSerializable {
     private HashMap<Location, Integer> controlPoints = new HashMap<>();//map of control points to faction ID of owner
     private HashMap<Integer, Double> controlPointProgress = new HashMap<>();//map of control points to progress towards capture
     private HashMap<Integer, Integer> controlPointHeldTime = new HashMap<>();//map of control points to time held by faction
-
 
     @Override
     public Map<String, Object> serialize() {
@@ -46,6 +44,11 @@ public class ControlPointManager implements ConfigurationSerializable {
 
     public void setControlPointOwner(Location location, int factionID) {
         controlPoints.put(location, factionID);
+        Hologram existing = DHAPI.getHologram(String.valueOf(location.hashCode()));
+        if (existing == null) {
+            existing = DHAPI.createHologram(String.valueOf(location.hashCode()), location, true);
+        }
+        existing.setAlwaysFacePlayer(true);
     }
 
     public boolean isControlPoint(Location location) {
@@ -119,6 +122,21 @@ public class ControlPointManager implements ConfigurationSerializable {
                     }
                 }
             }
+        }
+    }
+
+    public void updateHologram(Location location) {
+        Hologram h = DHAPI.getHologram(String.valueOf(location.hashCode()));
+        if (h == null) {
+            h = DHAPI.createHologram(String.valueOf(location.hashCode()), location);
+        }
+        int factionID = controlPoints.get(location);
+        Faction f = Rivals.getFactionManager().getFactionByID(factionID);
+        List<String> lines = new ArrayList<>();
+        if(f != null) {
+            lines.add(f.getColor() + f.getName());
+        } else {
+            lines.add("Unclaimed");
         }
     }
 }

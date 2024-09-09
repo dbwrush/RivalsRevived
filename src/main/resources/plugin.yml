@@ -6,6 +6,7 @@ author: sudologic
 depend:
   - WorldGuard
   - Shopkeepers
+  - DecentHolograms
 commands:
   rivals:
     description: Main rivals command

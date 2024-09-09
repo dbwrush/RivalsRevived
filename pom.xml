@@ -12,7 +12,7 @@
     <name>Rivals</name>
 
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -54,7 +54,7 @@
 
     <repositories>
         <repository>
-            <id>spigotmc-repo</id>
+            <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
         <repository>
@@ -67,7 +67,15 @@
         </repository>
         <repository>
             <id>shopkeepers-repo</id>
-            <url>https://nexus.lichtspiele.org/repository/releases/</url>
+            <url>https://repo.projectshard.dev/repository/releases/</url>
+        </repository>
+        <repository>
+            <id>jitpack</id>
+            <url>https://jitpack.io/</url>
+        </repository>
+        <repository>
+            <id>codemc</id>
+            <url>https://repo.codemc.io/repository/maven-public/</url>
         </repository>
     </repositories>
 
@@ -88,6 +96,12 @@
             <groupId>com.nisovin.shopkeepers</groupId>
             <artifactId>ShopkeepersAPI</artifactId>
             <version>2.18.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.decentsoftware-eu</groupId>
+            <artifactId>decentholograms</artifactId>
+            <version>2.8.11</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
