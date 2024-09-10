@@ -10,10 +10,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.EndPortalFrame;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Monster;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Villager;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -44,17 +41,17 @@ public class EventManager implements Listener {
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent e) {
-        Location spawn = e.getEntity().getWorld().getSpawnLocation();
-        Player p;
         if (e.getEntity() instanceof Player && e.getEntity().getKiller() != null) {
-            p = e.getEntity().getKiller();
-        }
-        //get player distance from spawn
-        double distance = e.getEntity().getLocation().distance(spawn);
-        distance = Math.max(1, distance * distance);
+            Location spawn = e.getEntity().getWorld().getSpawnLocation();
+            //get player distance from spawn
+            double distance = e.getEntity().getLocation().distance(spawn);
+            distance = Math.max(1, distance * distance);
 
-        //make warmongering decrease with distance from spawn, decrease should be exponential
-        effectManager.changePlayerWarMongering(e.getEntity().getKiller().getUniqueId(), 1 / distance);
+            //make warmongering decrease with distance from spawn, decrease should be exponential
+            effectManager.changePlayerWarMongering(e.getEntity().getKiller().getUniqueId(), 1 / distance);
+        } else if(e.getEntity() instanceof EnderDragon) {
+            Rivals.getFactionManager().beginCrisis(Rivals.getFactionManager().getFactionByPlayer(e.getEntity().getKiller().getUniqueId()).getID());
+        }
     }
 
     @EventHandler
@@ -149,6 +146,30 @@ public class EventManager implements Listener {
             e.getPlayer().sendMessage("[Rivals] Server status:");//display currently interventioned factions & number of policy proposals
             e.getPlayer().sendMessage("[Rivals] Use /policy for more information on politics");
         }
+        if(Rivals.getFactionManager().getTeleportOnJoin() == 1) {
+            //if player is in Crisis faction and NOT in the End, teleport them to the End.
+            if(manager.getFactionByPlayer(e.getPlayer().getUniqueId()).getID() == Rivals.getFactionManager().getCrisisFaction() && !e.getPlayer().getWorld().getEnvironment().equals(World.Environment.THE_END)) {
+                e.getPlayer().teleport(Bukkit.getWorld("world_the_end").getSpawnLocation());
+            }
+            //if player is in the End, and NOT part of the Crisis faction, teleport them to their respawn location
+            if(e.getPlayer().getWorld().getEnvironment().equals(World.Environment.THE_END) && manager.getFactionByPlayer(e.getPlayer().getUniqueId()).getID() != Rivals.getFactionManager().getCrisisFaction()) {
+                e.getPlayer().teleport(e.getPlayer().getRespawnLocation());
+            }
+        } else if(Rivals.getFactionManager().getTeleportOnJoin() == 2) {//teleport members of Crisis faction to their respawn point, only if they are in the End
+            if(manager.getFactionByPlayer(e.getPlayer().getUniqueId()).getID() == Rivals.getFactionManager().getCrisisFaction() && e.getPlayer().getWorld().getEnvironment().equals(World.Environment.THE_END)) {
+                e.getPlayer().teleport(e.getPlayer().getRespawnLocation());
+            }
+        }
+    }
+
+    @EventHandler
+    public void onSwitchDimension(PlayerChangedWorldEvent e) {
+        //if during Crisis, stop Crisis faction from leaving the End.
+        if(Rivals.getFactionManager().getTeleportOnJoin() == 1 &&
+            Rivals.getFactionManager().getFactionByPlayer(e.getPlayer().getUniqueId()).getID() == Rivals.getFactionManager().getCrisisFaction()
+            && !e.getPlayer().getWorld().getEnvironment().equals(World.Environment.THE_END)) {
+                e.getPlayer().teleport(Bukkit.getWorld("world_the_end").getSpawnLocation());
+        }
     }
 
     @EventHandler
@@ -184,7 +205,19 @@ public class EventManager implements Listener {
 
     @EventHandler
     public void onHit(EntityDamageByEntityEvent e) {
-        if(e.getEntityType() == EntityType.PLAYER) {
+        if(e.getEntityType() == EntityType.PLAYER && e.getDamager().getType() == EntityType.PLAYER) {
+            if(Rivals.getFactionManager().isCrisis()) {
+                //check if one player is in the Crisis faction and the other is not, otherwise cancel event
+                if(Rivals.getFactionManager().getFactionByPlayer(e.getEntity().getUniqueId()).getID() == Rivals.getFactionManager().getCrisisFaction() &&
+                    Rivals.getFactionManager().getFactionByPlayer(e.getDamager().getUniqueId()).getID() != Rivals.getFactionManager().getCrisisFaction()) {
+                    e.setCancelled(true);
+                    return;
+                } else if(Rivals.getFactionManager().getFactionByPlayer(e.getEntity().getUniqueId()).getID() != Rivals.getFactionManager().getCrisisFaction() &&
+                    Rivals.getFactionManager().getFactionByPlayer(e.getDamager().getUniqueId()).getID() == Rivals.getFactionManager().getCrisisFaction()) {
+                    e.setCancelled(true);
+                    return;
+                }
+            }
             Player victim = (Player) e.getEntity();
             if(combatTime.containsKey(victim.getUniqueId())) {
                 combatTime.remove(victim);

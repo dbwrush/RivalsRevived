@@ -24,17 +24,8 @@ import java.io.IOException;
 import java.util.logging.Level;
 
 /*
-TODO: Add control points
- - Display progress towards capturing a control point
- - Display which faction owns a control point
 TODO: Add Crisis Faction
- - When Dragon is killed, Crisis mode activates
- - Dragon killing faction becomes Crisis faction
- - All other factions cannot PvP each other, only against the Crisis faction
- - All other factions teleported out of End
  - End portals disabled
- - Crisis faction cannot exit End for 2 days
- - At end of 2 days, Crisis faction teleported to one of the Control Points
  */
 
 public final class Rivals extends JavaPlugin {
@@ -130,6 +121,9 @@ public final class Rivals extends JavaPlugin {
                 Bukkit.getLogger().log(Level.INFO, "[Rivals] Updating!");
                 effectManager.update();
                 controlPointManager.update();
+                if(factionManager.canBeginFinalBattle()) {
+                    factionManager.getTeleportOnJoin();
+                }
             }
         }.runTaskTimer(this, 0, 20L * 60L * 60L);//run once per hour
 
@@ -278,5 +272,9 @@ public final class Rivals extends JavaPlugin {
 
     public static double getRoundedDecimal(double value) {
         return Math.round(value * 100) / 100;
+    }
+
+    public boolean isCrisis() {
+        return factionManager.isCrisis();
     }
 }

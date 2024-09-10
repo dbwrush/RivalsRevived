@@ -4,7 +4,10 @@ import net.sudologic.rivals.Faction;
 import net.sudologic.rivals.Rivals;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.entity.Player;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -13,6 +16,13 @@ public class FactionManager implements ConfigurationSerializable {
     private Map<Integer, Faction> factions;
     private List<Integer> factionRankings;
     private List<MemberInvite> memberInvites;
+    private int crisisFaction = -1;
+    private int teleportOnJoin = -1;//-1 = normal, 1 = crisis, 2 = final battle
+    private long crisisStart = -1;
+
+    public boolean isCrisis() {
+        return crisisFaction != -1;
+    }
 
     public FactionManager(Map<String, Object> serializedFactionManager) {
         //Bukkit.getLogger().log(Level.INFO, "[Rivals] Begin deserializing faction data.");
@@ -33,6 +43,7 @@ public class FactionManager implements ConfigurationSerializable {
                 memberInvites.add(i);
             }
         }
+        crisisFaction = (Integer) serializedFactionManager.getOrDefault("crisisFaction", null);
         //Bukkit.getLogger().log(Level.INFO, "[Rivals] Removed " + removedInvites + " invites because they were more than 7 days old.");
         //Bukkit.getLogger().log(Level.INFO, "[Rivals] Finished deserializing faction data.");
     }
@@ -103,6 +114,8 @@ public class FactionManager implements ConfigurationSerializable {
             factions.remove(f.getID());
             removeInvitesForFaction(f);
             factionRankings.remove((Object) f.getID());
+            Rivals.getControlPointManager().clearFaction(f.getID());
+            Rivals.getEffectManager().removeFaction(f);
             return true;
         }
         return false;
@@ -201,6 +214,7 @@ public class FactionManager implements ConfigurationSerializable {
         }
         mapSerializer.put("factions", fObjects);
         mapSerializer.put("memberInvites", iObjects);
+        mapSerializer.put("crisisFaction", crisisFaction);
         return mapSerializer;
     }
 
@@ -260,5 +274,66 @@ public class FactionManager implements ConfigurationSerializable {
 
             return mapSerializer;
         }
+    }
+
+    public void beginCrisis(int f) {
+        if(crisisFaction == -1) {
+            crisisFaction = f;
+            teleportOnJoin = 1;
+            crisisStart = System.currentTimeMillis();
+        }
+        //iterate through all players, offline and online. If they are in crisisFaction, teleport them to the End. Otherwise, make sure they are not in the End.
+        for(Player p : Bukkit.getOnlinePlayers()) {
+            if(getFactionByPlayer(p.getUniqueId()) != null && getFactionByPlayer(p.getUniqueId()).getID() == f) {
+                if(!p.getWorld().getName().contains("end")) {
+                    p.sendMessage(ChatColor.RED + " You have been teleported to the End.");
+                    p.teleport(Bukkit.getWorld("world_the_end").getSpawnLocation());
+                }
+            } else {
+                if(p.getWorld().getName().contains("end")) {
+                    p.teleport(p.getRespawnLocation());
+                }
+            }
+        }
+    }
+
+    public void beginFinalBattle() {
+        teleportOnJoin = 2;
+        //set world border to shrink to 1 chunk in 1 hour
+        Bukkit.getWorld("world").getWorldBorder().setSize(16, 3600000);
+        //teleport crisis faction members to a random Control Point
+        Faction f = getFactionByID(crisisFaction);
+        Location l = Rivals.getControlPointManager().getRandomPoint();
+        if(l != null) {
+            for(UUID id : f.getMembers()) {
+                Player p = Bukkit.getPlayer(id);
+                if(p != null) {
+                    p.teleport(l);
+                }
+            }
+        }
+    }
+
+    public int getCrisisFaction() {
+        return crisisFaction;
+    }
+
+    public int getTeleportOnJoin() {
+        return teleportOnJoin;
+    }
+
+    public void setCrisisFaction(int f) {
+        crisisFaction = f;
+    }
+
+    public long getCrisisStart() {
+        return crisisStart;
+    }
+
+    public boolean canBeginFinalBattle() {
+        if(crisisStart == -1) {
+            return false;
+        }
+        return System.currentTimeMillis() - crisisStart > 3600000 * 48;//48 hours
     }
 }

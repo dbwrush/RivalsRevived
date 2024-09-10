@@ -6,6 +6,7 @@ import net.sudologic.rivals.Faction;
 import net.sudologic.rivals.Rivals;
 import net.sudologic.rivals.util.CustomCrafts;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.inventory.InventoryHolder;
@@ -44,11 +45,7 @@ public class ControlPointManager implements ConfigurationSerializable {
 
     public void setControlPointOwner(Location location, int factionID) {
         controlPoints.put(location, factionID);
-        Hologram existing = DHAPI.getHologram(String.valueOf(location.hashCode()));
-        if (existing == null) {
-            existing = DHAPI.createHologram(String.valueOf(location.hashCode()), location, true);
-        }
-        existing.setAlwaysFacePlayer(true);
+        updateHologram(location);
     }
 
     public boolean isControlPoint(Location location) {
@@ -126,9 +123,11 @@ public class ControlPointManager implements ConfigurationSerializable {
     }
 
     public void updateHologram(Location location) {
+        location = location.clone().add(0, 2, 0);
         Hologram h = DHAPI.getHologram(String.valueOf(location.hashCode()));
         if (h == null) {
-            h = DHAPI.createHologram(String.valueOf(location.hashCode()), location);
+            h = DHAPI.createHologram(String.valueOf(location.hashCode()), location, true);
+            h.setAlwaysFacePlayer(true);
         }
         int factionID = controlPoints.get(location);
         Faction f = Rivals.getFactionManager().getFactionByID(factionID);
@@ -138,5 +137,18 @@ public class ControlPointManager implements ConfigurationSerializable {
         } else {
             lines.add("Unclaimed");
         }
+        if (controlPointProgress.containsKey(location.hashCode())) {
+            int progress = (int) (controlPointProgress.get(location.hashCode()) * 10);
+            int rem = 10 - progress;
+            //Display progress bar
+            lines.add(f.getColor() + "█".repeat(progress) + ChatColor.WHITE + "█".repeat(rem));
+            lines.add("Capturing in " + rem + " hours");
+        }
+    }
+
+    public Location getRandomPoint() {
+        Random r = new Random();
+        List<Location> keys = new ArrayList<>(controlPoints.keySet());
+        return keys.get(r.nextInt(keys.size()));
     }
 }
