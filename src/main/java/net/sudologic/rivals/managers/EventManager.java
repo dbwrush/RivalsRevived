@@ -122,6 +122,7 @@ public class EventManager implements Listener {
                             effectManager.addFactionEffect(f, PotionEffectType.FIRE_RESISTANCE);
                             break;
                     }
+                    Rivals.getPlugin().addEye();
                 }
             }
         }
@@ -169,6 +170,10 @@ public class EventManager implements Listener {
             Rivals.getFactionManager().getFactionByPlayer(e.getPlayer().getUniqueId()).getID() == Rivals.getFactionManager().getCrisisFaction()
             && !e.getPlayer().getWorld().getEnvironment().equals(World.Environment.THE_END)) {
                 e.getPlayer().teleport(Bukkit.getWorld("world_the_end").getSpawnLocation());
+        } else if(e.getPlayer().getWorld().getEnvironment() == World.Environment.THE_END &&
+            Rivals.getPlugin().getNumEyes() < 36) {
+            e.getPlayer().sendMessage("[Rivals] Not ready to begin the Crisis yet.");
+            e.getPlayer().teleport(e.getPlayer().getRespawnLocation());
         }
     }
 

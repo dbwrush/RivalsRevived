@@ -23,11 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 
-/*
-TODO: Add Crisis Faction
- - End portals disabled
- */
-
 public final class Rivals extends JavaPlugin {
     private static FileConfiguration customConfig;
     private static FactionManager factionManager;
@@ -41,6 +36,7 @@ public final class Rivals extends JavaPlugin {
     private static ControlPointManager controlPointManager;
     private static Rivals plugin;
     private BukkitTask t;
+    private int numEyes = 0;
 
     public static boolean changeSetting(String settingName, String settingValue) {
         try {
@@ -151,6 +147,7 @@ public final class Rivals extends JavaPlugin {
         getConfig().set("shopManager", shopManager);
         getConfig().set("effectManager", effectManager);
         getConfig().set("controlPointManager", controlPointManager);
+        getConfig().set("numEyes", numEyes);
         //System.out.println(getConfig().get("data"));
         saveConfig();
     }
@@ -186,6 +183,9 @@ public final class Rivals extends JavaPlugin {
             controlPointManager = (ControlPointManager) getConfig().get("controlPointManager", ControlPointManager.class);
         } else {
             controlPointManager = new ControlPointManager();
+        }
+        if (getConfig().get("numEyes") != null) {
+            numEyes = getConfig().getInt("numEyes");
         }
     }
 
@@ -276,5 +276,13 @@ public final class Rivals extends JavaPlugin {
 
     public boolean isCrisis() {
         return factionManager.isCrisis();
+    }
+
+    public void addEye() {
+        numEyes++;
+    }
+
+    public int getNumEyes() {
+        return numEyes;
     }
 }
