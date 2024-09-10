@@ -2,6 +2,7 @@ package net.sudologic.rivals.commands;
 
 import net.sudologic.rivals.Rivals;
 import net.sudologic.rivals.util.CustomCrafts;
+import org.bukkit.Location;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -75,6 +76,23 @@ public class AdminCommand implements CommandExecutor {
                     return true;
                 }
                 player.getInventory().addItem(eye);
+                return true;
+            case "control":
+                if(!(commandSender instanceof Player)) {
+                    commandSender.sendMessage("[Rivals] This command can only be run by a player.");
+                    return true;
+                }
+                Location l = ((Player) commandSender).getLocation().getBlock().getLocation();
+                Rivals.getControlPointManager().setControlPointOwner(l, -1);
+                return true;
+            case "remcontrol":
+                if(!(commandSender instanceof Player)) {
+                    commandSender.sendMessage("[Rivals] This command can only be run by a player.");
+                    return true;
+                }
+                Location l2 = ((Player) commandSender).getLocation().getBlock().getLocation();
+                Rivals.getControlPointManager().removeControlPoint(l2);
+                return true;
             case "help":
                 commandSender.sendMessage("[Rivals] Admin Command Help:\n" +
                         "- /rivalsadmin setMainShopRegion <id>: Set the main shop region.\n" +

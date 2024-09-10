@@ -44,15 +44,18 @@ public class ControlPointManager implements ConfigurationSerializable {
     }
 
     public void setControlPointOwner(Location location, int factionID) {
+        location = location.getBlock().getLocation();
         controlPoints.put(location, factionID);
         updateHologram(location);
     }
 
     public boolean isControlPoint(Location location) {
+        location = location.getBlock().getLocation();
         return controlPoints.containsKey(location);
     }
 
     public int getControlPointOwner(Location location) {
+        location = location.getBlock().getLocation();
         return controlPoints.getOrDefault(location, -1);
     }
 
@@ -123,6 +126,7 @@ public class ControlPointManager implements ConfigurationSerializable {
     }
 
     public void updateHologram(Location location) {
+        location = location.getBlock().getLocation();
         location = location.clone().add(0, 2, 0);
         Hologram h = DHAPI.getHologram(String.valueOf(location.hashCode()));
         if (h == null) {
@@ -150,5 +154,13 @@ public class ControlPointManager implements ConfigurationSerializable {
         Random r = new Random();
         List<Location> keys = new ArrayList<>(controlPoints.keySet());
         return keys.get(r.nextInt(keys.size()));
+    }
+
+    public void removeControlPoint(Location l) {
+        l = l.getBlock().getLocation();
+        controlPoints.remove(l);
+        controlPointProgress.remove(l.hashCode());
+        controlPointHeldTime.remove(l.hashCode());
+        DHAPI.removeHologram(String.valueOf(l.hashCode()));
     }
 }
