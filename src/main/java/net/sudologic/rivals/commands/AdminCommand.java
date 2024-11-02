@@ -20,7 +20,7 @@ public class AdminCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] args) {
         if (commandSender instanceof Player) {
-            if (!commandSender.isOp() || !commandSender.hasPermission("rivals.admin")) {
+            if (!commandSender.isOp() && !commandSender.hasPermission("rivals.admin")) {
                 commandSender.sendMessage("[Rivals] You do not have permission to use this command.");
                 return true;
             }
