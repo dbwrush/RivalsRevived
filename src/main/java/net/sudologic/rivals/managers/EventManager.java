@@ -8,6 +8,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.EndPortalFrame;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.*;
@@ -77,7 +78,9 @@ public class EventManager implements Listener {
             Block b = e.getClickedBlock();
             if (b != null && b.getType() == Material.END_PORTAL_FRAME) {
                 Player p = e.getPlayer();
-                if(e.getItem() != null && e.getItem().getType() == Material.ENDER_EYE && !((EndPortalFrame)b).hasEye()) {
+                BlockData data = b.getBlockData();
+                boolean hasEye = ((EndPortalFrame) data).hasEye();
+                if(e.getItem() != null && e.getItem().getType() == Material.ENDER_EYE && !hasEye) {
                     //Player placed an eye of ender in the portal frame
                     ItemMeta item = e.getItem().getItemMeta();
                     if(item == null) {
@@ -101,24 +104,31 @@ public class EventManager implements Listener {
                             e.setCancelled(true);
                             return;
                         case 1: //Guardian Eye
+                            p.sendMessage("[Rivals] You've placed a Guardian Eye in the portal. Resistance +1 added to your faction");
                             effectManager.addFactionEffect(f, PotionEffectType.RESISTANCE);
                             break;
                         case 2: //Heavy Core Eye
+                            p.sendMessage("[Rivals] You've placed a Heavy Core Eye in the portal. Strength +1 added to your faction");
                             effectManager.addFactionEffect(f, PotionEffectType.STRENGTH);
                             break;
                         case 3: //Totem Eye
+                            p.sendMessage("[Rivals] You've placed a Totem Eye in the portal. Regeneration +1 added to your faction");
                             effectManager.addFactionEffect(f, PotionEffectType.REGENERATION);
                             break;
                         case 4: //Wither Eye
+                            p.sendMessage("[Rivals] You've placed a Wither Eye in the portal. Resistance +1 added to your faction");
                             effectManager.addFactionEffect(f, PotionEffectType.RESISTANCE);
                             break;
                         case 5: //Warden Eye
+                            p.sendMessage("[Rivals] You've placed a Warden Eye in the portal. Night Vision +1 added to your faction");
                             effectManager.addFactionEffect(f, PotionEffectType.NIGHT_VISION);
                             break;
                         case 6: //Evoker Eye
+                            p.sendMessage("[Rivals] You've placed an Evoker Eye in the portal. Health Boost +1 added to your faction");
                             effectManager.addFactionEffect(f, PotionEffectType.HEALTH_BOOST);
                             break;
                         case 7: //Blaze Eye
+                            p.sendMessage("[Rivals] You've placed a Blaze Eye in the portal. Fire Resistance +1 added to your faction");
                             effectManager.addFactionEffect(f, PotionEffectType.FIRE_RESISTANCE);
                             break;
                     }

@@ -41,14 +41,25 @@ public class EffectManager implements ConfigurationSerializable {
             ArrayList<PotionEffect> effects = new ArrayList<>();
             factionEffects.put(faction.getID(), effects);
         }
-        List<PotionEffect> effects = factionEffects.get(faction.getID());
+        ArrayList<PotionEffect> effects = factionEffects.get(faction.getID());
         //check if effects already contains an effect of same type, if so add more strength to the effect
+        boolean dup = false;
         for(PotionEffect e : effects) {
             if(e.getType().equals(effect)) {
                 effects.remove(e);
                 effects.add(new PotionEffect(e.getType(), e.getDuration(), e.getAmplifier() + 1));
-                return;
+                dup = true;
             }
+        }
+        if(!dup) {
+            effects.add(new PotionEffect(effect, 1000000, 1));
+        }
+        factionEffects.put(faction.getID(), effects);
+        //System.out.println("Adding effect " + effect.getName() + " to faction " + faction.getName());
+        for(UUID id : faction.getMembers()) {
+            Player p = Bukkit.getPlayer(id);
+            //System.out.println("Adding effect to player " + p.getName());
+            updatePlayer(p);
         }
     }
 
@@ -80,14 +91,17 @@ public class EffectManager implements ConfigurationSerializable {
             return;
         double penalty = playerWarMongering.getOrDefault(p.getUniqueId(), 0.0);
         if(penalty <= 0) {
-            return;
+            penalty = 0;
         }
+        //System.out.println("Penalty: " + penalty);
         Faction f = Rivals.getFactionManager().getFactionByPlayer(p.getUniqueId());
         if(f != null) {
+            //System.out.println("Faction: " + f + " has " + factionEffects.getOrDefault(f.getID(), new ArrayList<>()).size() + " effects");
             for(PotionEffect e : factionEffects.getOrDefault(f.getID(), new ArrayList<>())) {
                 if(p.hasPotionEffect(e.getType())) {
                     p.removePotionEffect(e.getType());
                 }
+                //p.sendMessage("You are affected by " + e.getType().getName());
                 p.addPotionEffect(e);
             }
         }
