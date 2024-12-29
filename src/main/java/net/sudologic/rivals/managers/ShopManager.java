@@ -17,10 +17,8 @@ import org.bukkit.World;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Entity;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Level;
 
 public class ShopManager implements ConfigurationSerializable {
     private String mainRegionString;
@@ -61,7 +59,14 @@ public class ShopManager implements ConfigurationSerializable {
             return false;
         }
         if(assignFactionToShop(f.getID(), availableRegions.get(0))) {
-            getShopkeeperForFaction(f).setName(f.getName());
+            Bukkit.getLogger().log(Level.INFO, "[Rivals] Shop assigned to " + f.getName());
+            Shopkeeper s = getShopkeeperForFaction(f);
+            if (s != null) {
+                s.setName(f.getName() + "'s Shop");
+            } else {
+                //for safety, remove the faction from the shopkeeper list
+                removeShop(f);
+            }
         }
         return true;
     }
@@ -69,7 +74,9 @@ public class ShopManager implements ConfigurationSerializable {
     public boolean removeShop(Faction f) {
         getShopkeeperForFaction(f).setName("Available Shop");
         if(regionAssignments.containsKey(f.getID())) {
+            ClaimManager.unsetFacitonAsRegionMember(f, getRegionForFaction(f));
             regionAssignments.remove(f.getID());
+            return true;
         }
         return false;
     }
@@ -90,41 +97,35 @@ public class ShopManager implements ConfigurationSerializable {
         if(!manager.hasRegion(regionID)) {
             return null;
         }
+        //Bukkit.getLogger().log(Level.INFO, "[Rivals] Region " + regionID + " exists.");
         ProtectedRegion region = manager.getRegion(regionID);
         BlockVector3 min = region.getMinimumPoint();
         BlockVector3 max = region.getMaximumPoint();
         //Bukkit.getLogger().log(Level.INFO, "[Rivals] Min is " + min.toString());
         //Bukkit.getLogger().log(Level.INFO, "[Rivals] Max is " + max.toString());
-        List<Entity> entities = new ArrayList<>();
-        World w = Bukkit.getWorld(shopWorldName);
-        for(int x = min.getBlockX() / 16 - 1; x <= max.getBlockX() / 16 - 1; x += 1) {
-            for(int z = min.getBlockZ() / 16 - 1; z <= max.getBlockZ() / 16 - 1; z += 1) {
-                //Bukkit.getLogger().log(Level.INFO, "[Rivals] Checking chunk at " + (x * 16) + ", " + (z * 16));
-                w.loadChunk(x, z);
-                List chunkEntities = List.of(w.getChunkAt(x, z).getEntities());
-                //Bukkit.getLogger().log(Level.INFO, "[Rivals] Chunk has " + chunkEntities.size() + " entities.");
-                entities.addAll(chunkEntities);
+
+        Shopkeeper shopkeeper = null;
+        Collection shopkeepers = ShopkeepersAPI.getShopkeeperRegistry().getShopkeepersInWorld(shopWorldName);
+        //Bukkit.getLogger().log(Level.INFO, "[Rivals] Shopkeepers in world: " + shopkeepers.size());
+        for(Object o : shopkeepers) {
+            //Bukkit.getLogger().log(Level.INFO, "[Rivals] Checking shopkeeper at " + ((Shopkeeper) o).getLocation().toString());
+            Shopkeeper s = (Shopkeeper) o;
+            Location l = s.getLocation();
+            if(l.getBlockX() >= min.getBlockX() &&
+                    l.getBlockX() <= max.getBlockX() &&
+                    l.getBlockY() >= min.getBlockY() &&
+                    l.getBlockY() <= max.getBlockY() &&
+                    l.getBlockZ() >= min.getBlockZ() &&
+                    l.getBlockZ() <= max.getBlockZ()) {
+                shopkeeper = s;
+                break;
             }
         }
 
-        Shopkeeper shopkeeper = null;
-        for(org.bukkit.entity.Entity e : entities) {
-            if(e.getLocation().getBlockX() > min.getBlockX() &&
-            e.getLocation().getBlockX() < max.getBlockX() &&
-            e.getLocation().getBlockY() > min.getBlockY() &&
-            e.getLocation().getBlockY() < max.getBlockY() &&
-            e.getLocation().getBlockZ() > min.getBlockZ() &&
-            e.getLocation().getBlockZ() < max.getBlockZ()) {
-                //Bukkit.getLogger().log(Level.INFO, "[Rivals] Checking if entity is shopkeeper");
-                if(ShopkeepersAPI.getShopkeeperRegistry().isShopkeeper(e)) {
-                    //Bukkit.getLogger().log(Level.INFO, "[Rivals] Shopkeeper found.");
-                    shopkeeper = ShopkeepersAPI.getShopkeeperRegistry().getShopkeeperByEntity(e);
-                    break;
-                }
-            } else {
-                //Bukkit.getLogger().log(Level.INFO, "[Rivals] Entity pruned outside region.");
-            }
+        if (shopkeeper == null) {
+            //Bukkit.getLogger().log(Level.INFO, "[Rivals] Shopkeeper not found.");
         }
+
         return shopkeeper;
     }
 

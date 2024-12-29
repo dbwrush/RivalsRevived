@@ -130,6 +130,14 @@ public class ClaimManager {
         region.setMembers(domain);
     }
 
+    public static void unsetFacitonAsRegionMember(Faction f, ProtectedRegion region) {
+        DefaultDomain domain = new DefaultDomain();
+        for(UUID uuid : f.getMembers()) {
+            domain.removePlayer(uuid);
+        }
+        region.setMembers(domain);
+    }
+
     private void setRegionMembers(Chunk chunk) {
         DefaultDomain domain = new DefaultDomain();
         for(int f : getFactionsForClaim(chunk)) {
